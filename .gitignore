@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.venv/
+
+# Environment / secrets
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Runtime trading data
+paper_trades.json
+paper_trades_backup_*.json
+
+ai_decisions.json
+ai_decisions_v2.json
+ai_decisions_v3.json
+
+strategy_memory.db
