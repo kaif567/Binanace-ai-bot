@@ -225,6 +225,12 @@ def get_directional_probability(
         neutral
     )
 
+    directional_outcomes = (
+        correct
+        +
+        wrong
+    )
+
     numerator = (
         correct
         +
@@ -254,12 +260,6 @@ def get_directional_probability(
         2
     )
 
-    directional_outcomes = (
-        correct
-        +
-        wrong
-    )
-
     if directional_outcomes > 0:
 
         conditional_accuracy = round(
@@ -277,7 +277,7 @@ def get_directional_probability(
 
         conditional_accuracy = None
 
-    if sample >= int(
+    if directional_outcomes >= int(
         minimum_samples
     ):
 
@@ -312,6 +312,9 @@ def get_directional_probability(
 
         "sample":
         sample,
+
+        "directional_outcomes":
+        directional_outcomes,
 
         "minimum_sample":
         int(
