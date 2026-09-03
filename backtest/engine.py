@@ -592,11 +592,32 @@ def run_advanced_backtest(
         )
 
         if signal_allowed:
-            analysis = calculate_market_score(
-                current,
-                previous,
-                strategy
-            )
+            explicit_signal = None
+
+            if "signal" in current.index:
+                candle_signal = current["signal"]
+
+                if candle_signal in [
+                    "STRONG BUY",
+                    "STRONG SELL"
+                ]:
+                    explicit_signal = candle_signal
+
+            if explicit_signal is not None:
+                analysis = {
+                    "score": 50,
+                    "signal": explicit_signal,
+                    "reasons": [
+                        "Explicit candle signal"
+                    ]
+                }
+
+            else:
+                analysis = calculate_market_score(
+                    current,
+                    previous,
+                    strategy
+                )
 
             score = float(
                 analysis.get(

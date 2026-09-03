@@ -6,19 +6,21 @@ from scanner.coins import (
 )
 
 
+def main():
 
-while True:
+    while True:
+
+        results = scan_market()
+
+        print_scanner(results)
+
+        print(
+            "Refreshing in 60 seconds..."
+        )
+
+        time.sleep(60)
 
 
-    results = scan_market()
+if __name__ == "__main__":
 
-
-    print_scanner(results)
-
-
-    print(
-        "Refreshing in 60 seconds..."
-    )
-
-
-    time.sleep(60)
+    main()
