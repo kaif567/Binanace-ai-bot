@@ -29,9 +29,25 @@ def calculate_training_score(
     Score used only for selecting a strategy
     INSIDE the training window.
 
-    Final strategy quality will come from OOS
-    walk-forward results via calculate_oos_strategy_quality().
+    V2 Normalized Training Score:
+    - Component 1 (60%): Normalized return signal via tanh(avg_return / 0.005)
+    - Component 2 (40%): Normalized PF signal via tanh(ln(PF) / ln(2.5))
+    - Sample-size shrinkage: n / (n + 20.0) [lower baseline than OOS 50]
+    - Returns 0-100 where 50 = neutral / no statistical edge
+
+    Final strategy quality comes from OOS walk-forward results
+    via calculate_oos_strategy_quality().
     """
+
+    closed_trades = int(
+        result.get(
+            "trades",
+            0
+        )
+    )
+
+    if closed_trades == 0:
+        return 0.0
 
     profit = float(
         result.get(
@@ -40,12 +56,7 @@ def calculate_training_score(
         )
     )
 
-    win_rate = float(
-        result.get(
-            "win_rate",
-            0
-        )
-    )
+    trade_amount = 100.0
 
     profit_factor = float(
         result.get(
@@ -54,39 +65,53 @@ def calculate_training_score(
         )
     )
 
-    trades = int(
-        result.get(
-            "trades",
-            0
+    # Component 1: Normalized return signal (60% weight)
+    avg_return = (
+        (profit / closed_trades)
+        /
+        trade_amount
+    )
+
+    return_signal = math.tanh(
+        avg_return / 0.005
+    )
+
+    # Component 2: Normalized profit factor signal (40% weight)
+    if profit_factor > 0:
+        pf_signal = math.tanh(
+            math.log(profit_factor)
+            /
+            math.log(2.5)
         )
+    else:
+        pf_signal = -1.0
+
+    # Weighted edge
+    edge = (
+        0.60 * return_signal
+        +
+        0.40 * pf_signal
     )
 
-    score = 0.0
-
-    if profit > 0:
-        score += min(
-            profit * 5,
-            40
-        )
-
-    score += min(
-        win_rate * 0.4,
-        30
+    raw_score = (
+        50.0 + 50.0 * edge
     )
 
-    score += min(
-        profit_factor * 15,
-        20
+    # Training window confidence shrinkage (n / (n + 20.0))
+    confidence = (
+        closed_trades
+        /
+        (closed_trades + 20.0)
     )
 
-    if trades >= 10:
-        score += 10
+    final_score = (
+        50.0
+        +
+        confidence * (raw_score - 50.0)
+    )
 
     return round(
-        min(
-            score,
-            100
-        ),
+        final_score,
         2
     )
 

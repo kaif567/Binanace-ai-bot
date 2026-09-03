@@ -1,0 +1,75 @@
+======================================================================
+FETCHING 500 BTCUSDT 15m CANDLES (VERIFIED SSL via certifi CA)...
+======================================================================
+Successfully fetched 500 real BTCUSDT candles.
+Start Price: $77466.65 | End Price: $77903.28
+
+======================================================================
+RUNNING OPTIMIZER WITH CURRENT UNMODIFIED calculate_training_score()
+======================================================================
+
+===== TRAINING OPTIMIZER TOP =====
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+
+========================= BURN-IN: 100 CANDLES =========================
+Total candidate parameter sets tested: 12
+
+TOP 5 CANDIDATES:
+Rank EMA         SL/TP       Score     Profit    PF        Trades  WinRate 
+---------------------------------------------------------------------------
+1    10/50       0.01/0.05   0.0       $0.00     0.00      0       0.0%    
+2    10/50       0.01/0.08   0.0       $0.00     0.00      0       0.0%    
+3    10/50       0.02/0.05   0.0       $0.00     0.00      0       0.0%    
+4    10/50       0.02/0.08   0.0       $0.00     0.00      0       0.0%    
+5    20/50       0.01/0.05   0.0       $0.00     0.00      0       0.0%    
+
+Candidates within 5.0 pts of Rank 1 (Score: 0.0): 0 / 12
+
+===== TRAINING OPTIMIZER TOP =====
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+
+========================= BURN-IN: 200 CANDLES =========================
+Total candidate parameter sets tested: 12
+
+TOP 5 CANDIDATES:
+Rank EMA         SL/TP       Score     Profit    PF        Trades  WinRate 
+---------------------------------------------------------------------------
+1    10/50       0.01/0.05   0.0       $0.00     0.00      0       0.0%    
+2    10/50       0.01/0.08   0.0       $0.00     0.00      0       0.0%    
+3    10/50       0.02/0.05   0.0       $0.00     0.00      0       0.0%    
+4    10/50       0.02/0.08   0.0       $0.00     0.00      0       0.0%    
+5    20/50       0.01/0.05   0.0       $0.00     0.00      0       0.0%    
+
+Candidates within 5.0 pts of Rank 1 (Score: 0.0): 0 / 12
+
+===== TRAINING OPTIMIZER TOP =====
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+Score: 0.0 | Profit: 0.0 | Win Rate: 0
+
+========================= BURN-IN: 300 CANDLES =========================
+Total candidate parameter sets tested: 12
+
+TOP 5 CANDIDATES:
+Rank EMA         SL/TP       Score     Profit    PF        Trades  WinRate 
+---------------------------------------------------------------------------
+1    10/50       0.01/0.05   0.0       $0.00     0.00      0       0.0%    
+2    10/50       0.01/0.08   0.0       $0.00     0.00      0       0.0%    
+3    10/50       0.02/0.05   0.0       $0.00     0.00      0       0.0%    
+4    10/50       0.02/0.08   0.0       $0.00     0.00      0       0.0%    
+5    20/50       0.01/0.05   0.0       $0.00     0.00      0       0.0%    
+
+Candidates within 5.0 pts of Rank 1 (Score: 0.0): 0 / 12
+
+======================================================================
+CROSS-BURN-IN STABILITY COMPARISON
+======================================================================
+Burn-In   Rank 1 EMA     Rank 1 SL/TP   Score     Profit    PF      Trades  
+----------------------------------------------------------------------------
+100       10/50          0.01/0.05      0.0       $0.00     0.00    0       
+200       10/50          0.01/0.05      0.0       $0.00     0.00    0       
+300       10/50          0.01/0.05      0.0       $0.00     0.00    0       
