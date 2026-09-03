@@ -1,3 +1,5 @@
+import math
+
 from backtest.engine import (
     run_advanced_backtest
 )
@@ -20,7 +22,7 @@ TAKE_PROFITS = [
 ]
 
 
-def calculate_strategy_score(
+def calculate_training_score(
     result
 ):
     """
@@ -28,7 +30,7 @@ def calculate_strategy_score(
     INSIDE the training window.
 
     Final strategy quality will come from OOS
-    walk-forward results instead.
+    walk-forward results via calculate_oos_strategy_quality().
     """
 
     profit = float(
@@ -85,6 +87,102 @@ def calculate_strategy_score(
             score,
             100
         ),
+        2
+    )
+
+
+# Backwards-compatibility alias
+calculate_strategy_score = calculate_training_score
+
+
+def calculate_oos_strategy_quality(
+    result
+):
+    """
+    V2 Strategy Quality formula for OOS results only.
+
+    Component 1 (60%): Normalized return signal via tanh
+    Component 2 (40%): Profit factor signal via tanh
+    Sample-size shrinkage: n/(n+50)
+
+    Returns score 0-100 where:
+        50 = neutral/no-edge
+        <50 = negative evidence
+        >50 = positive evidence
+    """
+
+    closed_trades = int(
+        result.get(
+            "trades",
+            0
+        )
+    )
+
+    if closed_trades == 0:
+        return 0.0
+
+    profit = float(
+        result.get(
+            "profit",
+            0
+        )
+    )
+
+    trade_amount = 100.0
+
+    profit_factor = float(
+        result.get(
+            "profit_factor",
+            0
+        )
+    )
+
+    # Component 1: Normalized return signal (60% weight)
+    avg_return = (
+        (profit / closed_trades)
+        /
+        trade_amount
+    )
+
+    return_signal = math.tanh(
+        avg_return / 0.005
+    )
+
+    # Component 2: PF signal (40% weight)
+    if profit_factor > 0:
+        pf_signal = math.tanh(
+            math.log(profit_factor)
+            /
+            math.log(2.5)
+        )
+    else:
+        pf_signal = -1.0
+
+    # Weighted edge
+    edge = (
+        0.60 * return_signal
+        +
+        0.40 * pf_signal
+    )
+
+    # Raw score (before shrinkage)
+    raw_score = 50.0 + 50.0 * edge
+
+    # Sample-size shrinkage
+    confidence = (
+        closed_trades
+        /
+        (closed_trades + 50.0)
+    )
+
+    final_score = (
+        50.0
+        +
+        confidence * (raw_score - 50.0)
+    )
+
+    return round(
+        final_score,
         2
     )
 

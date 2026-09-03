@@ -32,7 +32,11 @@ from database.confidence import (
 )
 
 
-STRATEGY_QUALITY_GATE = 70.0
+STRATEGY_QUALITY_V2_GATE = 60.0
+
+MIN_OOS_TRADES_GATE = 50
+
+MIN_PROFIT_FACTOR_GATE = 1.20
 
 COLLECTION_SIGNAL_GATE = 65.0
 
@@ -47,7 +51,11 @@ def determine_paper_eligibility(
     directional_probability,
     directional_probability_sample,
     direction,
-    oos_sample_quality
+    oos_sample_quality,
+    oos_trades,
+    oos_profit_factor,
+    oos_profit,
+    robustness_status="ROBUST"
 ):
 
     strategy_quality = float(
@@ -60,6 +68,18 @@ def determine_paper_eligibility(
 
     directional_probability_sample = int(
         directional_probability_sample
+    )
+
+    oos_trades = int(
+        oos_trades
+    )
+
+    oos_profit_factor = float(
+        oos_profit_factor
+    )
+
+    oos_profit = float(
+        oos_profit
     )
 
     if direction not in [
@@ -95,10 +115,14 @@ def determine_paper_eligibility(
             "Strategy does not have enough OOS trades"
         }
 
+    # =========================
+    # MULTI-CONDITION GATE (V2)
+    # =========================
+
     if (
         strategy_quality
         <
-        STRATEGY_QUALITY_GATE
+        STRATEGY_QUALITY_V2_GATE
     ):
 
         return {
@@ -109,7 +133,73 @@ def determine_paper_eligibility(
             "STRATEGY_QUALITY_BLOCKED",
 
             "reason":
-            "Strategy quality below 70"
+            f"Strategy quality V2 below {STRATEGY_QUALITY_V2_GATE}"
+        }
+
+    if (
+        oos_trades
+        <
+        MIN_OOS_TRADES_GATE
+    ):
+
+        return {
+            "eligible":
+            False,
+
+            "mode":
+            "OOS_TRADES_BLOCKED",
+
+            "reason":
+            f"OOS trades {oos_trades} below {MIN_OOS_TRADES_GATE}"
+        }
+
+    if (
+        oos_profit_factor
+        <
+        MIN_PROFIT_FACTOR_GATE
+    ):
+
+        return {
+            "eligible":
+            False,
+
+            "mode":
+            "PROFIT_FACTOR_BLOCKED",
+
+            "reason":
+            f"Profit factor {oos_profit_factor:.4f} below {MIN_PROFIT_FACTOR_GATE}"
+        }
+
+    avg_return_per_trade = (
+        oos_profit / oos_trades
+        if oos_trades > 0
+        else 0
+    )
+
+    if avg_return_per_trade <= 0:
+
+        return {
+            "eligible":
+            False,
+
+            "mode":
+            "AVG_RETURN_BLOCKED",
+
+            "reason":
+            f"Avg return per trade ${avg_return_per_trade:.4f} not positive"
+        }
+
+    if robustness_status == "FRAGILE":
+
+        return {
+            "eligible":
+            False,
+
+            "mode":
+            "ROBUSTNESS_FRAGILE_BLOCKED",
+
+            "reason":
+            "Strategy failed outlier removal test (PF < 1.0 without top winners)"
         }
 
     # =========================
@@ -483,6 +573,30 @@ def run_ai_pipeline(
             oos.get(
                 "sample_quality",
                 "LOW_SAMPLE_SIZE"
+            ),
+
+            oos_trades=
+            oos.get(
+                "trades",
+                0
+            ),
+
+            oos_profit_factor=
+            oos.get(
+                "profit_factor",
+                0
+            ),
+
+            oos_profit=
+            oos.get(
+                "profit",
+                0
+            ),
+
+            robustness_status=
+            oos.get(
+                "robustness_status",
+                "INSUFFICIENT_SAMPLE"
             )
         )
     )

@@ -4,9 +4,94 @@ from backtest.engine import (
 
 from backtest.optimizer import (
     advanced_optimizer,
+    calculate_oos_strategy_quality,
     calculate_strategy_score,
     prepare_strategy_dataframe
 )
+
+
+def _calculate_robustness_diagnostic(closed_trades):
+    """
+    Diagnostic: Check if strategy performance is an artifact of top 1 or 2 outlier winners.
+
+    Removes top-1 and top-2 winning trades, recalculates profit factor.
+    If PF falls below 1.0 without top winners -> strategy is FRAGILE.
+
+    Returns dict:
+    - status: "ROBUST" | "FRAGILE" | "INSUFFICIENT_SAMPLE"
+    - pf_ex_top1: float
+    - pf_ex_top2: float
+    - top_profit_share_pct: float (top-1 winner as % of total gross profit)
+    """
+    if not closed_trades or len(closed_trades) < 10:
+        return {
+            "status": "INSUFFICIENT_SAMPLE",
+            "pf_ex_top1": 0.0,
+            "pf_ex_top2": 0.0,
+            "top_profit_share_pct": 0.0,
+            "reason": "Less than 10 closed trades"
+        }
+
+    profits = [
+        float(t.get("profit", 0))
+        for t in closed_trades
+    ]
+
+    wins = sorted([p for p in profits if p > 0], reverse=True)
+    losses = [abs(p) for p in profits if p < 0]
+
+    gross_profit = sum(wins)
+    gross_loss = sum(losses)
+
+    if not wins or gross_profit <= 0:
+        return {
+            "status": "FRAGILE",
+            "pf_ex_top1": 0.0,
+            "pf_ex_top2": 0.0,
+            "top_profit_share_pct": 0.0,
+            "reason": "No winning trades"
+        }
+
+    top_profit_share_pct = round((wins[0] / gross_profit) * 100, 2)
+
+    # Exclude top-1 winner
+    gp_ex_top1 = gross_profit - wins[0]
+    if gross_loss > 0:
+        pf_ex_top1 = gp_ex_top1 / gross_loss
+    else:
+        # Zero loss edge case: no losing trades
+        pf_ex_top1 = 999.0 if gp_ex_top1 > 0 else 0.0
+
+    # Exclude top-2 winners
+    if len(wins) >= 2:
+        gp_ex_top2 = gross_profit - wins[0] - wins[1]
+    else:
+        gp_ex_top2 = 0.0
+
+    if gross_loss > 0:
+        pf_ex_top2 = gp_ex_top2 / gross_loss
+    else:
+        # Zero loss edge case
+        pf_ex_top2 = 999.0 if gp_ex_top2 > 0 else 0.0
+
+    pf_ex_top1 = round(pf_ex_top1, 4)
+    pf_ex_top2 = round(pf_ex_top2, 4)
+
+    # Decision rule: BOTH ex-top1 AND ex-top2 must maintain PF >= 1.0
+    if pf_ex_top1 < 1.0 or pf_ex_top2 < 1.0:
+        status = "FRAGILE"
+        reason = f"PF falls below 1.0 without top winners (ex-top1 PF: {pf_ex_top1}, ex-top2 PF: {pf_ex_top2})"
+    else:
+        status = "ROBUST"
+        reason = f"PF remains >= 1.0 without top winners (ex-top1 PF: {pf_ex_top1}, ex-top2 PF: {pf_ex_top2})"
+
+    return {
+        "status": status,
+        "pf_ex_top1": pf_ex_top1,
+        "pf_ex_top2": pf_ex_top2,
+        "top_profit_share_pct": top_profit_share_pct,
+        "reason": reason
+    }
 
 
 def _aggregate_oos_history(
@@ -173,10 +258,24 @@ def _aggregate_oos_history(
     }
 
     metrics[
-        "walk_forward_score"
-    ] = calculate_strategy_score(
+        "strategy_quality"
+    ] = calculate_oos_strategy_quality(
         metrics
     )
+
+    # Robustness diagnostic (outlier winner removal)
+    robustness = _calculate_robustness_diagnostic(
+        closed_trades
+    )
+    metrics["robustness"] = robustness
+    metrics["robustness_status"] = robustness["status"]
+
+    # Backwards-compatibility alias
+    metrics[
+        "walk_forward_score"
+    ] = metrics[
+        "strategy_quality"
+    ]
 
     return metrics
 
@@ -663,6 +762,21 @@ def walk_forward_test(
 
         "sample_quality":
         oos["sample_quality"],
+
+        "robustness":
+        oos.get(
+            "robustness",
+            {}
+        ),
+
+        "robustness_status":
+        oos.get(
+            "robustness_status",
+            "INSUFFICIENT_SAMPLE"
+        ),
+
+        "strategy_quality":
+        oos["strategy_quality"],
 
         "walk_forward_score":
         oos[
