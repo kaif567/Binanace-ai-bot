@@ -1,6 +1,6 @@
 # Roadmap — Current Status & Next Milestones
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
 
 ---
 
@@ -20,12 +20,11 @@ Last updated: 2026-09-16
 
 | Direction | Decisive samples | Correct | Wrong | Neutral | Accuracy |
 |---|---|---|---|---|---|
-| **UP** | 35 / 50 | 13 | 22 | 134 | 37.14% |
-| **DOWN** | 39 / 50 | 18 | 21 | 115 | 46.15% |
+| **UP** | 39 / 50 | — | — | — | Pending full count |
+| **DOWN** | 46 / 50 | — | — | — | Pending full count |
 
-- Both directions currently show accuracy **below 50%** (no edge detected yet)
-- Sample size is still small — full 50/50 calibration expected in **~2–3 days** from 2026-09-16
-- Current below-50% trend is informative but not yet conclusive
+- Both directions nearing 50-sample threshold — verdict expected very soon
+- Current trend: accuracy below 50% on both directions (no edge detected yet)
 
 ---
 
@@ -41,6 +40,7 @@ Last updated: 2026-09-16
 | 6 | Training Score V2 (same formula, n+20 shrinkage) | `ae2b523` | ✅ Deployed |
 | 7 | 5-condition paper-eligibility gate | — | ✅ Deployed |
 | 8 | Directional Probability NEUTRAL-counting bug fix | `709dd38` | ✅ Deployed |
+| — | SQ V2 / Robustness standalone reporting fix | `5434ff6` | ✅ Local (tooling only, not deployed) |
 
 ---
 
@@ -65,54 +65,75 @@ Last updated: 2026-09-16
 
 ## Next Milestone: Full Calibration Statistical Evaluation
 
-**Trigger:** Both UP and DOWN reach 50 decisive samples (expected ~2–3 days from 2026-09-16)
+**Trigger:** Both UP and DOWN reach 50 decisive samples (imminent — UP: 39/50, DOWN: 46/50)
 
 **Action:** Full statistical evaluation of directional edge
-- If accuracy stays below/near 50%: confirms current model has no directional edge at this timeframe/indicator set → **proceed to Phase 1 improvements on single-coin BTC**
+- If accuracy stays below/near 50%: confirms current model has no directional edge at this timeframe/indicator set → **decide jointly on next Phase 1 approach**
 - If accuracy exceeds 55%+: indicates potential edge worth developing further → still validate Phase 1 improvements on BTC before any expansion
-
-**Expected outcome (based on current trend):** No edge detected → proceed to Phase 1 improvements on BTC
 
 > [!IMPORTANT]
 > **Mandatory sequencing — no shortcuts:**
-> 1. ✅ Both directions reach 50 decisive samples → statistical evaluation
-> 2. → Phase 1 improvements tried on **single-coin BTC only** and re-validated
+> 1. ✅ Both directions reach 50 decisive samples → formal written verdict
+> 2. → Phase 1 improvements tried on **single-coin BTC only**, using the multi-window design process (see below)
 > 3. → Only after BTC single-coin edge is confirmed: consider multi-coin expansion
 > 4. → Only after proven paper-trading edge at scale: consider live execution layer
 >
-> **Multi-coin expansion and live execution are NOT the next step.** Phase 1 on BTC is.  
+> **Multi-coin expansion and live execution are NOT the next step.**  
 > This order cannot be changed, reordered, or skipped — regardless of how long it takes.
 
 ---
 
-## Phase 1 Improvements (Planned, Not Started)
+## Phase 1 Improvements — ⚠️ INCOMPLETE / INCONCLUSIVE
 
-These will be developed in a **new local branch**, fully tested, and validated **on single-coin BTCUSDT** before any VPS deployment. Multi-coin expansion only happens after Phase 1 edge is confirmed on BTC.
+> [!CAUTION]
+> **Phase 1 status: INCOMPLETE.** Two filter attempts were made and fully reverted after failing
+> multi-window validation. Codebase is back to clean `paper-baseline-v2` + SQ V2 reporting fix.
+> No filter code is deployed or active on the VPS.
 
-### 1. Multi-Timeframe (MTF) Confluence
-- **Goal:** Require higher timeframe (4H, daily) trend alignment before taking a 1H signal
-- **Logic:** A 1H UP signal only counts if 4H trend is also bullish
-- **Expected benefit:** Filters false signals during choppy 1H action within a larger trend
+### What Was Attempted and Why It Failed
 
-### 2. ADX / Chop-Ranging Filter
-- **Goal:** Block trades when ADX is below a threshold (e.g., ADX < 20–25)
-- **Logic:** Low ADX = non-trending / ranging market = unreliable directional signals
-- **Expected benefit:** Avoids the current problem of gate blocking due to low Strategy Quality in chop
+#### Attempt 1: MTF Confluence (EMA 20/50 on 4H) — REVERTED
 
-### 3. SMC / Fair Value Gaps (FVG)
-- **Goal:** Add Smart Money Concepts imbalance zones as a signal filter or confluence layer
-- **Logic:** Only take trades that align with an unmitigated FVG (supply/demand imbalance)
-- **Expected benefit:** Higher-probability entry points by requiring institutional-level structure
+| Window | PF Before | PF After | Verdict |
+|---|---|---|---|
+| Jan 2024 (dev window) | 0.76 | 1.30 | ✅ Looked good |
+| Mar 2024 | 0.77 | 0.50 | ❌ FAIL |
+| Aug 2023 | 1.23 | 0.52 | ❌ FAIL |
 
-### Development Protocol for Phase 1
-1. Implement one improvement at a time on a local dev branch
-2. Run walk-forward backtest with the new filter — **on BTC data only**
-3. Compare Strategy Quality V2 against current baseline
-4. Full regression test suite must pass
-5. Peer review the scoring/gate impact
-6. Only after all three improvements are individually validated on BTC: consider combining them
-7. Only after combined BTC validation: proceed to Phase 2 (multi-coin)
-8. Deploy as a new frozen baseline (e.g., `paper-baseline-v3`)
+**Diagnosis:** Overfitted to Jan 2024 trending conditions.
+
+#### Attempt 2: Chop Filter / ADX+ATR Regime Filter (Part A) — REVERTED
+
+| Window | PF Before | PF After | SQ V2 Before | SQ V2 After | Verdict |
+|---|---|---|---|---|---|
+| Aug 2023 (sweep-adjacent) | 0.44 | 0.36 | 45.34 | 44.40 | ✅ Neutral |
+| Jan 2024 | 1.09 | 0.59 | 52.49 | 41.93 | ❌ FAIL |
+| Mar 2024 | 1.09 | 0.61 | 53.57 | 38.59 | ❌ FAIL |
+
+**Diagnosis:** Same single-window overfitting pattern. Thresholds from sweep did not generalize.
+
+### Lesson Learned — Mandatory Future Protocol
+
+> [!IMPORTANT]
+> **Any future threshold-based filter MUST follow a multi-window design process from day one.**
+> Single-window "it worked!" is not sufficient evidence. Both attempts passed single-window review
+> and failed multi-window validation. This methodology is now mandatory:
+>
+> 1. Define filter logic concept — no thresholds yet
+> 2. Fetch data from **≥3 structurally different windows** upfront (before any parameter choice)
+> 3. Define pass/fail criteria before running numbers
+> 4. Select thresholds that generalize across ALL windows simultaneously — not per-window best
+> 5. Only if step 4 succeeds: implement in code + run full regression suite
+
+### What Comes Next (After Phase 0 Verdict)
+
+Once Phase 0 calibration completes (UP: 39/50, DOWN: 46/50 — imminent), we decide jointly:
+
+- **Option A:** Attempt a third filter using a structurally different approach — but only if designed multi-window from the start per protocol above
+- **Option B:** Accept that threshold-based filters may not generalize on this strategy/data; consider a fundamentally different approach to improving edge
+- **Option C:** If Phase 0 verdict shows directional accuracy has shifted meaningfully, reassess whether Phase 1 filter work is even the right priority
+
+**No Phase 1 filter code will be written until this joint decision is made.**
 
 ---
 
