@@ -36,12 +36,6 @@ from indicators.technical import (
 )
 
 
-from indicators.mtf import (
-    get_4h_trend_from_df,
-    check_mtf_confluence
-)
-
-
 class InsufficientContinuousHistoryError(
         Exception
 ):
@@ -641,21 +635,6 @@ def _run_heavy_cycle(
     )
 
 
-    try:
-        print("\nFetching 4h candles for MTF Confluence check...")
-        df_4h, _ = get_closed_candles_paginated(
-            symbol,
-            interval="4h",
-            limit=200,
-            page_size=200
-        )
-        df_4h = add_indicators(df_4h)
-        htf_trend = get_4h_trend_from_df(df_4h)
-    except Exception as e:
-        print(f"Warning: Failed to fetch 4h data for MTF check: {e}")
-        htf_trend = "SIDEWAYS"
-
-
     result = (
         run_ai_pipeline(
 
@@ -673,9 +652,7 @@ def _run_heavy_cycle(
             step,
 
             min_oos_trades=
-            min_oos_trades,
-
-            htf_trend=htf_trend
+            min_oos_trades
 
         )
     )
@@ -755,20 +732,6 @@ def _run_heavy_cycle(
     paper_reason = result.get(
         "paper_reason",
         ""
-    )
-
-
-    # Phase 1 Chop Filter — read back from pipeline result
-    # (pipeline computes this via classify_regime internally)
-    regime_status = result.get(
-        "regime_status",
-        "UNKNOWN"
-    )
-
-
-    mtf_confluence = result.get(
-        "mtf_confluence",
-        "UNKNOWN"
     )
 
 
@@ -875,24 +838,6 @@ def _run_heavy_cycle(
     print(
         "Reason:",
         paper_reason
-    )
-
-
-    print(
-        "Regime Status:",
-        regime_status
-    )
-
-
-    print(
-        "HTF Trend (4h):",
-        htf_trend
-    )
-
-
-    print(
-        "MTF Confluence:",
-        mtf_confluence
     )
 
 
