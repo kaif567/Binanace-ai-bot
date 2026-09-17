@@ -1,7 +1,4 @@
 from strategy.scoring import calculate_market_score
-from indicators.regime import classify_regime
-import pandas as pd
-from datetime import datetime
 
 
 def _validate_parameters(
@@ -324,8 +321,7 @@ def run_advanced_backtest(
     fee=0.001,
     strategy=None,
     trade_start_index=1,
-    force_close_at_end=False,
-    regime_filter=None
+    force_close_at_end=False
 ):
     """
     Realistic backtest execution.
@@ -342,14 +338,6 @@ def run_advanced_backtest(
     - Walk-forward can restrict trading to OOS
       via trade_start_index.
     - Open OOS trade can be MTM closed at fold end.
-
-    regime_filter (optional):
-    - None (default) → no regime filtering; behaviour identical to baseline.
-    - dict with keys: adx_trending_thresh, adx_ranging_thresh,
-      atr_lookback, atr_change_thresh
-    - When set, only generates entries in TRENDING or UNKNOWN regimes.
-      RANGING and HIGH_VOLATILITY candles are skipped for entry.
-      Exit checks on open positions still run on every candle regardless.
     """
 
     _validate_parameters(
@@ -604,30 +592,6 @@ def run_advanced_backtest(
         )
 
         if signal_allowed:
-
-            # ==================================
-            # REGIME FILTER (Phase 1 chop filter)
-            # ==================================
-            # Only runs when regime_filter is explicitly passed.
-            # regime_filter=None (default) → this block is skipped entirely;
-            # behaviour is 100% identical to pre-Phase-1 baseline.
-            #
-            # df.iloc[:i+1] = all closed candles up to and including the
-            # current signal candle. classify_regime reads only closed data
-            # (its last row = candle i). No look-ahead bias.
-            #
-            # TRENDING or UNKNOWN → proceed to signal generation.
-            # RANGING or HIGH_VOLATILITY → skip entry on this candle.
-            # Open position exits are NOT skipped (they run before this block).
-
-            if regime_filter is not None:
-                regime_at_signal = classify_regime(
-                    df.iloc[:i + 1],
-                    **regime_filter
-                )
-                if regime_at_signal not in ("TRENDING", "UNKNOWN"):
-                    continue
-
             explicit_signal = None
 
             if "signal" in current.index:

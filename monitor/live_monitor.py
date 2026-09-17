@@ -653,6 +653,7 @@ def _run_heavy_cycle(
 
             min_oos_trades=
             min_oos_trades
+
         )
     )
 
@@ -731,14 +732,6 @@ def _run_heavy_cycle(
     paper_reason = result.get(
         "paper_reason",
         ""
-    )
-
-
-    # Phase 1 Chop Filter — read back from pipeline result
-    # (pipeline computes this via classify_regime internally)
-    regime_status = result.get(
-        "regime_status",
-        "UNKNOWN"
     )
 
 
@@ -845,12 +838,6 @@ def _run_heavy_cycle(
     print(
         "Reason:",
         paper_reason
-    )
-
-
-    print(
-        "Regime Status:",
-        regime_status
     )
 
 

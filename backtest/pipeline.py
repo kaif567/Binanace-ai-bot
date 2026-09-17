@@ -31,8 +31,6 @@ from database.confidence import (
     MIN_DIRECTIONAL_SAMPLES
 )
 
-from indicators.regime import classify_regime
-
 
 STRATEGY_QUALITY_V2_GATE = 60.0
 
@@ -46,22 +44,6 @@ CALIBRATED_SIGNAL_GATE = 50.0
 
 DIRECTIONAL_PROBABILITY_GATE = 55.0
 
-# ── Phase 1 Chop Filter — Regime parameters ──────────────────────────────────
-# Derived from walk-forward ADX+ATR threshold sweep on 2000 1h BTCUSDT candles.
-# ADX>25 → 13 OOS trades, Strategy Quality V2 = 50.20 (+8.0 vs unfiltered 42.2)
-# ATR surge >40% in 12h → additional HIGH_VOLATILITY block
-#
-# IMPORTANT: Do NOT change these values without re-running backtest/threshold_sweep.py
-# on updated historical data. Changing thresholds without validation violates
-# WORKING_PRINCIPLES Rule 5 (validate against real historical data).
-# ─────────────────────────────────────────────────────────────────────────────
-REGIME_PARAMS = {
-    "adx_trending_thresh": 25.0,
-    "adx_ranging_thresh": 18.0,
-    "atr_lookback": 12,
-    "atr_change_thresh": 0.40,
-}
-
 
 def determine_paper_eligibility(
     strategy_quality,
@@ -73,8 +55,7 @@ def determine_paper_eligibility(
     oos_trades,
     oos_profit_factor,
     oos_profit,
-    robustness_status="ROBUST",
-    regime_status="TRENDING"
+    robustness_status="ROBUST"
 ):
 
     strategy_quality = float(
@@ -220,29 +201,6 @@ def determine_paper_eligibility(
             "reason":
             "Strategy failed outlier removal test (PF < 1.0 without top winners)"
         }
-
-    # =========================
-    # GATE #6: REGIME FILTER
-    # (Phase 1 Chop Filter)
-    # =========================
-    # Block trades when current market regime is RANGING or HIGH_VOLATILITY.
-    # TRENDING or UNKNOWN are allowed through.
-    # UNKNOWN = insufficient indicator data (e.g. first candle) → pass through
-    # so data gaps never silently block potentially valid trades.
-
-    if regime_status not in ("TRENDING", "UNKNOWN"):
-
-        return {
-            "eligible":
-            False,
-
-            "mode":
-            "REGIME_BLOCKED",
-
-            "reason":
-            f"Market regime is {regime_status} — entry blocked (chop filter)"
-        }
-
 
     # =========================
     # COLLECTION MODE
@@ -594,18 +552,6 @@ def run_ai_pipeline(
         )
     )
 
-    # =========================
-    # REGIME STATUS (Gate #6)
-    # =========================
-    # Classify current market regime from the live 1h candle DataFrame.
-    # classify_regime reads df.iloc[-1] for ADX/ATR — always the last
-    # closed candle. This is identical to what the backtest engine does
-    # during signal generation (df.iloc[:i+1]), ensuring live ↔ backtest
-    # consistency (no mismatch like the earlier SL-slippage case).
-
-    regime_status = classify_regime(df, **REGIME_PARAMS)
-
-
     paper_gate = (
         determine_paper_eligibility(
             strategy_quality=
@@ -651,9 +597,7 @@ def run_ai_pipeline(
             oos.get(
                 "robustness_status",
                 "INSUFFICIENT_SAMPLE"
-            ),
-
-            regime_status=regime_status
+            )
         )
     )
 
@@ -733,10 +677,6 @@ def run_ai_pipeline(
         "paper_eligible"
     ] = paper_eligible
 
-    best[
-        "regime_status"
-    ] = regime_status
-
     print(
         "\n=============================="
     )
@@ -799,11 +739,6 @@ def run_ai_pipeline(
     print(
         "Paper Reason:",
         paper_reason
-    )
-
-    print(
-        "Regime Status:",
-        regime_status
     )
 
     print(
@@ -886,9 +821,6 @@ def run_ai_pipeline(
 
         "reasons":
         reasons,
-
-        "regime_status":
-        regime_status,
 
         "paper_trade":
         None
