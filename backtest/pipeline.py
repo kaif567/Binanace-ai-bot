@@ -32,7 +32,6 @@ from database.confidence import (
 )
 
 from indicators.regime import classify_regime
-from indicators.mtf import check_mtf_confluence
 
 
 STRATEGY_QUALITY_V2_GATE = 60.0
@@ -75,8 +74,7 @@ def determine_paper_eligibility(
     oos_profit_factor,
     oos_profit,
     robustness_status="ROBUST",
-    regime_status="TRENDING",
-    mtf_confluence="ALIGNED"
+    regime_status="TRENDING"
 ):
 
     strategy_quality = float(
@@ -245,16 +243,6 @@ def determine_paper_eligibility(
             f"Market regime is {regime_status} — entry blocked (chop filter)"
         }
 
-    # =========================
-    # GATE #7: MTF CONFLUENCE
-    # (Part B MTF Filter)
-    # =========================
-    if mtf_confluence == "CONFLICT":
-        return {
-            "eligible": False,
-            "mode": "MTF_CONFLICT_BLOCKED",
-            "reason": "4h HTF trend opposes 1h signal direction"
-        }
 
     # =========================
     # COLLECTION MODE
@@ -365,8 +353,7 @@ def run_ai_pipeline(
     initial_train_window=300,
     test_window=50,
     step=50,
-    min_oos_trades=20,
-    htf_trend="SIDEWAYS"
+    min_oos_trades=20
 ):
 
     print(
@@ -618,10 +605,6 @@ def run_ai_pipeline(
 
     regime_status = classify_regime(df, **REGIME_PARAMS)
 
-    # =========================
-    # MTF CONFLUENCE (Gate #7)
-    # =========================
-    mtf_confluence = check_mtf_confluence(direction, htf_trend)
 
     paper_gate = (
         determine_paper_eligibility(
@@ -670,8 +653,7 @@ def run_ai_pipeline(
                 "INSUFFICIENT_SAMPLE"
             ),
 
-            regime_status=regime_status,
-            mtf_confluence=mtf_confluence
+            regime_status=regime_status
         )
     )
 
@@ -755,10 +737,6 @@ def run_ai_pipeline(
         "regime_status"
     ] = regime_status
 
-    best[
-        "mtf_confluence"
-    ] = mtf_confluence
-
     print(
         "\n=============================="
     )
@@ -826,11 +804,6 @@ def run_ai_pipeline(
     print(
         "Regime Status:",
         regime_status
-    )
-
-    print(
-        "MTF Confluence:",
-        mtf_confluence
     )
 
     print(
@@ -916,9 +889,6 @@ def run_ai_pipeline(
 
         "regime_status":
         regime_status,
-
-        "mtf_confluence":
-        mtf_confluence,
 
         "paper_trade":
         None

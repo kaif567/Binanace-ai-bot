@@ -1,6 +1,7 @@
 from strategy.scoring import calculate_market_score
 from indicators.regime import classify_regime
-from indicators.mtf import get_htf_trend_at_time, check_mtf_confluence
+import pandas as pd
+from datetime import datetime
 
 
 def _validate_parameters(
@@ -324,8 +325,7 @@ def run_advanced_backtest(
     strategy=None,
     trade_start_index=1,
     force_close_at_end=False,
-    regime_filter=None,
-    mtf_df=None
+    regime_filter=None
 ):
     """
     Realistic backtest execution.
@@ -671,17 +671,6 @@ def run_advanced_backtest(
                 "reasons",
                 []
             )
-
-            # ==================================
-            # MTF CONFLUENCE FILTER (Part B)
-            # ==================================
-            if mtf_df is not None and signal in ("STRONG BUY", "STRONG SELL"):
-                signal_dir = "UP" if signal == "STRONG BUY" else "DOWN"
-                signal_time_ms = _get_time_value(current)
-                htf_trend = get_htf_trend_at_time(mtf_df, signal_time_ms)
-                
-                if check_mtf_confluence(signal_dir, htf_trend) == "CONFLICT":
-                    continue
 
             if signal == "STRONG BUY":
                 pending_entry = {
