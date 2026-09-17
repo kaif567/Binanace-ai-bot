@@ -783,3 +783,37 @@ def walk_forward_test(
             "walk_forward_score"
         ]
     }
+def evaluate_standalone_backtest(backtest_result):
+    """
+    Evaluates a standalone (single-run) backtest result and annotates it with
+    Strategy Quality V2 and Robustness metrics.
+    Useful for ad-hoc filter testing without running full walk-forward folds.
+    """
+    # 1. Ensure basic metrics are populated for calculate_oos_strategy_quality
+    history = backtest_result.get("history", [])
+    
+    profits = [
+        float(trade.get("profit", 0)) 
+        for trade in history 
+        if "profit" in trade
+    ]
+    
+    wins = [p for p in profits if p > 0]
+    losses = [p for p in profits if p <= 0]
+    
+    # Needs explicit 'trades' count (number of closed trades) for SQ V2
+    backtest_result["trades"] = len(profits)
+    backtest_result["wins"] = len(wins)
+    backtest_result["losses"] = len(losses)
+    
+    # 2. Calculate Strategy Quality V2
+    backtest_result["strategy_quality"] = calculate_oos_strategy_quality(backtest_result)
+    
+    # 3. Calculate Robustness Diagnostic
+    completed_trades = [t for t in history if "profit" in t]
+    robustness = _calculate_robustness_diagnostic(completed_trades)
+    
+    backtest_result["robustness"] = robustness
+    backtest_result["robustness_status"] = robustness.get("status", "UNKNOWN")
+    
+    return backtest_result
