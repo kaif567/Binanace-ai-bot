@@ -58,6 +58,10 @@ def add_indicators(df):
 
     df["atr"] = atr.average_true_range()
 
+    # Donchian Channels
+    df["donchian_high_20"] = df["high"].rolling(20).max().shift(1)
+    df["donchian_low_20"] = df["low"].rolling(20).min().shift(1)
+
 
     # ADX
 

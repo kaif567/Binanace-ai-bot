@@ -269,6 +269,7 @@ def advanced_optimizer(
     df,
     initial_balance=1000,
     trade_amount=100,
+    donchian_period=20,
     fee=0.001,
     force_close_at_end=True
 ):
@@ -329,6 +330,8 @@ def advanced_optimizer(
                     stop_loss=sl,
 
                     take_profit=tp,
+                    
+                    donchian_period=donchian_period,
 
                     fee=fee,
 

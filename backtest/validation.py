@@ -288,6 +288,7 @@ def walk_forward_test(
     min_oos_trades=20,
     initial_balance=1000,
     trade_amount=100,
+    donchian_period=20,
     fee=0.001
 ):
     """
@@ -469,6 +470,8 @@ def walk_forward_test(
 
                 trade_amount=
                 trade_amount,
+                
+                donchian_period=donchian_period,
 
                 fee=fee,
 
@@ -549,6 +552,8 @@ def walk_forward_test(
                         "tp"
                     ]
                 ),
+                
+                donchian_period=donchian_period,
 
                 fee=fee,
 
@@ -558,9 +563,6 @@ def walk_forward_test(
                 trade_start_index=
                 test_start,
 
-                # Boundary solution:
-                # close remaining open trade
-                # at final OOS candle CLOSE.
                 force_close_at_end=True
             )
         )

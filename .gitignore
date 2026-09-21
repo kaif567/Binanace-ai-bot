@@ -24,3 +24,9 @@ ai_decisions_v2.json
 ai_decisions_v3.json
 
 strategy_memory.db
+# Large data files
+*.csv
+*.parquet
+*.h5
+*.db
+*.sqlite3

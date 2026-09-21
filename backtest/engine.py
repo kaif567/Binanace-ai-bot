@@ -318,6 +318,7 @@ def run_advanced_backtest(
     trade_amount=100,
     stop_loss=0.02,
     take_profit=0.05,
+    donchian_period=20,
     fee=0.001,
     strategy=None,
     trade_start_index=1,
@@ -616,7 +617,8 @@ def run_advanced_backtest(
                 analysis = calculate_market_score(
                     current,
                     previous,
-                    strategy
+                    strategy,
+                    donchian_period=donchian_period
                 )
 
             score = float(
